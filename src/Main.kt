@@ -156,7 +156,9 @@ fun handleUncompressedTile(bytes: ByteArray) {
     val streetName = getItem(16, 10)
     // street/city
     val streetCity = getItem(17, 4)
+    // TODO: Original code decreases streetCity.second by 1, but it's not clear why
     // street/id
+    // TODO: If itemCount of the tile is less than 38, street_id is not read
     val streetId = getItem(37, 4)
     // polygon/head
     val polygonHead = getItem(18, 16)
@@ -166,8 +168,24 @@ fun handleUncompressedTile(bytes: ByteArray) {
     val lineSpeedAvg = getItem(21, 2)
     // line_speed/line_ref
     val lineSpeedLineRef = getItem(20, 4)
+    // TODO: If lineSpeedLineRef.second is 0, line_speed/index is not read and range is read, otherwise line_speed/index is read and range is not read
     // range
     val range = getItem(24, 6)
+    // alert/data
+    val alertData = getItem(25, 16)
+    // square/data
+    val squareData = getItem(26, 12)
+    // metadata/attributes
+    val metadataAttributes = getItem(27, 8)
+    // venue/head
+    val venueHead = getItem(28, 16)
+    // venue/venueid
+    val venueVenueId = getItem(29, 2)
+    // TODO: If itemCount of the tile is less than 31, skip _fill_line_ext
+    // line_ext/type
+    val lineExtType = getItem(30, 1)
+
+    // TODO: If lineSpeedLineRef.second is not 0, jump to here and skip the previous code
     // line_speed/index
     val lineSpeedIndex = getItem(22, 4)
     // line_speed/index
