@@ -9,59 +9,51 @@ const val hex = "2e2e2e2e0000000313a112cf0000000000000460575a4446010000000000030
 fun main() {
     val bytes = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
     val bbuf = ByteBuffer.wrap(bytes)
-        .order(java.nio.ByteOrder.BIG_ENDIAN)
+        .order(ByteOrder.BIG_ENDIAN)
 
     val magic = bbuf.int
-    val count = bbuf.int
+    val tilesCount = bbuf.int
 
     if (magic != 0x2e2e2e2e) {
         throw IllegalArgumentException("Invalid magic number")
     }
 
-    println("Magic: 0x${magic.toString(16)}")
-    println("Count: $count")
+    println("Tiles count: $tilesCount")
 
-    for (i in 0 until count) {
+    for (i in 0 until tilesCount) {
         val id = bbuf.int
-        val unk1 = bbuf.int // timestamp?
+        val line = bbuf.int // line?
         val size = bbuf.int
 
-        println("tile $i: id: $id, Unk1: $unk1, size: $size")
+        println()
+        println("tile $i: id: $id, line: $line, size: $size")
 
         val tileBbuf = bbuf.slice().order(ByteOrder.LITTLE_ENDIAN)
 
         val signature = tileBbuf.int // WZDF
-        println("signature: 0x${signature.toString(16)}")
         if (signature != 0x46445a57) {
             throw IllegalArgumentException("Invalid tile signature")
         }
 
         val endianness = tileBbuf.int
-        println("endianness: $endianness")
         if (endianness != 1) {
             throw IllegalArgumentException("Invalid tile endianness")
         }
 
         val version = tileBbuf.int
-        println("version: 0x${version.toString(16)}")
         if (version != 0x30000) {
             throw IllegalArgumentException("Invalid tile version")
         }
 
         val dataFileSize = tileBbuf.int
-        println("dataFileSize: $dataFileSize")
-
         val decompressedSize = tileBbuf.int
-        println("decompressedSize: $decompressedSize")
-
-        val compressedBytes = ByteArray(dataFileSize)
-        tileBbuf.get(compressedBytes)
-        println("compressedBytes: ${compressedBytes.size}")
+        val compressedBytes = ByteArray(dataFileSize).apply { tileBbuf.get(this) }
 
         val decompressedBytes = InflaterInputStream(compressedBytes.inputStream()).use { it.readBytes() }
-        println("decompressedBytes: ${decompressedBytes.size}")
+        if (decompressedBytes.size != decompressedSize) {
+            throw IllegalArgumentException("Invalid decompressed size")
+        }
 
-        // print as hex
         println(decompressedBytes.joinToString("") { it.toInt().and(0xff).toString(16).padStart(2, '0') })
 
         handleUncompressedTile(decompressedBytes)
@@ -76,76 +68,109 @@ fun handleUncompressedTile(bytes: ByteArray) {
     val decompressedBbuf = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
 
     val itemCount = decompressedBbuf.int
-    val unk2 = decompressedBbuf.int
-    val unk3 = decompressedBbuf.int
-    val unk4 = decompressedBbuf.int
+    val padBits = decompressedBbuf.int
 
-    val itemSizesOffset = 8
-    val itemsOffset = 8 + (itemCount * 4) // header + item sizes
+    val block1Offset = 8 // header
+    val block2Offset = 8 + (itemCount * 4) // header + item sizes
 
-    println("itemCount: $itemCount, unk2: $unk2, itemsOffset: $itemsOffset")
-    println("unk3: $unk3, unk4: $unk4")
+    val padMask = (0xffffffff shl (padBits % 32)).toInt()
+    val pad = padMask.inv()
 
-    fun getItem(i: Int, size: Int) {
-        val a = decompressedBbuf.getInt(itemSizesOffset + (i * 4))
-        if (i == 0) {
-            val b = decompressedBbuf.getInt(itemsOffset + (i * 4))
-            println("item $i: a: $a, b: $b")
-        } else {
-            // puVar1 = item_sizes + (item_index - 1);
-            val a = decompressedBbuf.getInt(itemSizesOffset + ((i - 1) * 4))
-            // item_sizes = item_sizes + item_index;
-            val b = decompressedBbuf.getInt(itemSizesOffset + (i * 4))
-            // unkvar2 = param_1->unk3 + *puVar1 & param_1->unk4;
-            val c = (unk3 + a) and unk4
-            // uVar2 = *item_sizes - unkvar2;
-            val d = b - c
-            val e = d / size
-            println("item $i: a: $a, b: $b, c: $c, d: $d, e: $e")
+    fun getItem(itemIndex: Int, itemSize: Int): Pair<Int, Int> {
+        val previousAccSizeOffset = block1Offset + ((itemIndex - 1) * 4)
+        val accSizeOffset = block1Offset + (itemIndex * 4)
 
-//            println()
-        }
+        val previousAccSize = if (itemIndex == 0) 0 else decompressedBbuf.getInt(previousAccSizeOffset)
+        val accSize = decompressedBbuf.getInt(accSizeOffset)
+
+        val previousAccSizeWithPad = (previousAccSize + pad) and padMask
+        val itemsOffset = block2Offset + previousAccSizeWithPad
+        val itemsSize = accSize - previousAccSizeWithPad
+        val itemCount = itemsSize / itemSize
+
+        return itemsOffset to itemCount
     }
 
     // line/data
-    getItem(9, 8)
+    val lineData = getItem(9, 8)
     // line/summary
-    getItem(10, 62)
+    val lineSummary = getItem(10, 62)
     // point/data
-    getItem(13, 4)
+    val pointData = getItem(13, 4)
     // point/id
-    getItem(14, 4)
+    val pointId = getItem(14, 4)
     // shape/data
-    getItem(8, 4)
+    val shapeDAta = getItem(8, 4)
     // string
-    getItem(0, 1)
-    getItem(1, 1)
-    getItem(2, 1)
-    getItem(3, 1)
-    getItem(4, 1)
-    getItem(5, 1)
-    getItem(6, 1)
-    getItem(7, 1)
+    val string1 = getItem(0, 1)
+    if (string1.second > 0) {
+        val string1Offset = string1.first
+        val string1Bytes = ByteArray(string1.second).apply { decompressedBbuf.position(string1Offset); decompressedBbuf.get(this) }
+        println("string1: ${String(string1Bytes).replace("\u0000", " ")}")
+    }
+    val string2 = getItem(1, 1)
+    if (string2.second > 0) {
+        val string2Offset = string2.first
+        val string2Bytes = ByteArray(string2.second).apply { decompressedBbuf.position(string2Offset); decompressedBbuf.get(this) }
+        println("string2: ${String(string2Bytes).replace("\u0000", " ")}")
+    }
+    val string3 = getItem(2, 1)
+    if (string3.second > 0) {
+        val string3Offset = string3.first
+        val string3Bytes = ByteArray(string3.second).apply { decompressedBbuf.position(string3Offset); decompressedBbuf.get(this) }
+        println("string3: ${String(string3Bytes).replace("\u0000", " ")}")
+    }
+    val string4 = getItem(3, 1)
+    if (string4.second > 0) {
+        val string4Offset = string4.first
+        val string4Bytes = ByteArray(string4.second).apply { decompressedBbuf.position(string4Offset); decompressedBbuf.get(this) }
+        println("string4: ${String(string4Bytes).replace("\u0000", " ")}")
+    }
+    val string5 = getItem(4, 1)
+    if (string5.second > 0) {
+        val string5Offset = string5.first
+        val string5Bytes = ByteArray(string5.second).apply { decompressedBbuf.position(string5Offset); decompressedBbuf.get(this) }
+        println("string5: ${String(string5Bytes).replace("\u0000", " ")}")
+    }
+    val string6 = getItem(5, 1)
+    if (string6.second > 0) {
+        val string6Offset = string6.first
+        val string6Bytes = ByteArray(string6.second).apply { decompressedBbuf.position(string6Offset); decompressedBbuf.get(this) }
+        println("string6: ${String(string6Bytes).replace("\u0000", " ")}")
+    }
+    val string7 = getItem(6, 1)
+    if (string7.second > 0) {
+        val string7Offset = string7.first
+        val string7Bytes = ByteArray(string7.second).apply { decompressedBbuf.position(string7Offset); decompressedBbuf.get(this) }
+        println("string7: ${String(string7Bytes).replace("\u0000", " ")}")
+    }
+    val string8 = getItem(7, 1)
+    if (string8.second > 0) {
+        val string8Offset = string8.first
+        val string8Bytes = ByteArray(string8.second).apply { decompressedBbuf.position(string8Offset); decompressedBbuf.get(this) }
+        println("string8: ${String(string8Bytes).replace("\u0000", " ")}")
+    }
     // line_route/data
-    getItem(15, 4)
+    val lineRouteData = getItem(15, 4)
     // street/name
-    getItem(16, 10)
+    val streetName = getItem(16, 10)
     // street/city
-    getItem(17, 4)
+    val streetCity = getItem(17, 4)
     // street/id
-    getItem(37, 4)
+    val streetId = getItem(37, 4)
     // polygon/head
-    getItem(18, 16)
+    val polygonHead = getItem(18, 16)
     // polygon/point
-    getItem(19, 2)
+    val polygonPoint = getItem(19, 2)
     // line_speed/avg
-    getItem(21, 2)
+    val lineSpeedAvg = getItem(21, 2)
     // line_speed/line_ref
-    getItem(20, 4)
+    val lineSpeedLineRef = getItem(20, 4)
     // range
-    getItem(24, 6)
+    val range = getItem(24, 6)
     // line_speed/index
-    getItem(22, 4)
+    val lineSpeedIndex = getItem(22, 4)
     // line_speed/index
-    getItem(23, 2)
+    val lineSpeedIndex2 = getItem(23, 2)
+
 }
