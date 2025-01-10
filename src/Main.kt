@@ -6,189 +6,358 @@ const val hex = "2e2e2e2e0000000313a112cf0000000000000460575a4446010000000000030
 
 // tile size = 0x18
 
-fun main() {
-    val bytes = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-    val bbuf = ByteBuffer.wrap(bytes)
-        .order(ByteOrder.BIG_ENDIAN)
+class WazeDynamicConfig {
+    var mapTileProtobufEnabled = true
+        private set
+}
 
-    val magic = bbuf.int
-    val tilesCount = bbuf.int
+class Tile(
+    private val dynamicConfig: WazeDynamicConfig
+) {
+    // __fill_line
+    private var lineData: List<ByteArray> = emptyList()
+    private var lineSummary: List<ByteArray> = emptyList()
+    private var lineBroken: List<ByteArray> = emptyList()
+    private var lineRoundabout: List<ByteArray> = emptyList()
 
-    if (magic != 0x2e2e2e2e) {
-        throw IllegalArgumentException("Invalid magic number")
+    // __fill_point
+    private var pointData: List<ByteArray> = emptyList()
+    private var pointId: List<ByteArray> = emptyList()
+
+    // __fill_shape
+    private var shapeData: List<ByteArray> = emptyList()
+
+    // __fill_string
+    private var string1: List<ByteArray> = emptyList()
+    private var string2: List<ByteArray> = emptyList()
+    private var string3: List<ByteArray> = emptyList()
+    private var string4: List<ByteArray> = emptyList()
+    private var string5: List<ByteArray> = emptyList()
+    private var string6: List<ByteArray> = emptyList()
+    private var string7: List<ByteArray> = emptyList()
+    private var string8: List<ByteArray> = emptyList()
+
+    // __fill_route
+    private var lineRouteData: List<ByteArray> = emptyList()
+
+    // __fill_street
+    private var streetName: List<ByteArray> = emptyList()
+    private var streetCity: List<ByteArray> = emptyList()
+    private var streetId: List<ByteArray> = emptyList()
+
+    // __fill_polygon
+    private var polygonHead: List<ByteArray> = emptyList()
+    private var polygonPoint: List<ByteArray> = emptyList()
+
+    // __fill_speed
+    private var lineSpeedAvg: List<ByteArray> = emptyList()
+    private var lineSpeedLineRef: List<ByteArray> = emptyList()
+    private var lineSpeedIndex: List<ByteArray> = emptyList()
+    private var lineSpeedIndex2: List<ByteArray> = emptyList()
+
+    // __fill_range
+    private var range: List<ByteArray> = emptyList()
+
+    // __fill_alert
+    private var alertData: List<ByteArray> = emptyList()
+
+    // __fill_tile
+    private var squareData: List<ByteArray> = emptyList()
+
+    // __fill_metadata
+    private var metadataAttrributes: List<ByteArray> = emptyList()
+
+    // __fill_venue
+    private var venueHead: List<ByteArray> = emptyList()
+    private var venueVenueId: List<ByteArray> = emptyList()
+
+    // __fill_line_ext
+    private var lineExtType: List<ByteArray> = emptyList()
+    private var lineExtId: List<ByteArray> = emptyList()
+    private var lineExtLevelByLine: List<ByteArray> = emptyList()
+    private var lineExtLevels: List<ByteArray> = emptyList()
+    private var lineSpeedMax: List<ByteArray> = emptyList()
+    private var lineAttributes: List<ByteArray> = emptyList()
+    private var lineType: List<ByteArray> = emptyList()
+    private var lineNewType: List<ByteArray> = emptyList()
+
+    // __fill_polygon_ex
+    private var polygonEx: List<ByteArray> = emptyList()
+
+    // __fill_beacon
+    private var beaconPos: List<ByteArray> = emptyList()
+    private var beaconId: List<ByteArray> = emptyList()
+    private var beaconExPos: List<ByteArray> = emptyList()
+    private var beaconExId: List<ByteArray> = emptyList()
+    private var beaconExMask: List<ByteArray> = emptyList()
+
+    // __fill_proto
+    private var lineExtensionProtobufData: List<ByteArray> = emptyList()
+
+    //    fun getItem(itemIndex: Int, itemSize: Int): Pair<Int, Int> {
+    //        val previousAccSizeOffset = block1Offset + ((itemIndex - 1) * 4)
+    //        val accSizeOffset = block1Offset + (itemIndex * 4)
+    //
+    //        val previousAccSize = if (itemIndex == 0) 0 else decompressedBbuf.getInt(previousAccSizeOffset)
+    //        val accSize = decompressedBbuf.getInt(accSizeOffset)
+    //
+    //        val previousAccSizeWithPad = (previousAccSize + pad) and padMask
+    //        val itemsOffset = block2Offset + previousAccSizeWithPad
+    //        val itemsSize = accSize - previousAccSizeWithPad
+    //        val itemCount = itemsSize / itemSize
+    //
+    //        return itemsOffset to itemCount
+    //    }
+
+    private var items: List<ByteArray> = emptyList()
+
+    private fun parseItems(bbuf: ByteBuffer) {
+
     }
 
-    println("Tiles count: $tilesCount")
+    private fun getItem(index: Int, itemSize: Int): List<ByteArray> {
+        if (itemSize == 0) throw IllegalArgumentException("Invalid item size")
 
-    for (i in 0 until tilesCount) {
-        val id = bbuf.int
-        val line = bbuf.int // line?
-        val size = bbuf.int
 
-        println()
-        println("tile $i: id: $id, line: $line, size: $size")
 
-        val tileBbuf = bbuf.slice().order(ByteOrder.LITTLE_ENDIAN)
+        return emptyList()
+    }
 
-        val signature = tileBbuf.int // WZDF
-        if (signature != 0x46445a57) {
+    private fun _fill_everything() {
+        _fill_line()
+        if (lineSummary.size != 1) {
+            println("missing line/summary structure")
+            return
+        }
+        _fill_point()
+        _fill_shape()
+        _fill_string()
+        _fill_route()
+        _fill_street()
+        _fill_polygon()
+        _fill_speed()
+        _fill_range()
+        _fill_alert()
+        _fill_tile()
+        _fill_metadata()
+        _fill_venue()
+        _fill_line_ext()
+        _fill_polygon_ex()
+        _fill_beacon()
+        _fill_proto()
+    }
+
+    private fun _fill_line() {
+        lineData = getItem(9, 8)
+        lineSummary = getItem(10, 62)
+        lineBroken = getItem(11, 2)
+        lineRoundabout = getItem(12, 2)
+    }
+
+    private fun _fill_point() {
+        pointData = getItem(13, 4)
+        pointId = getItem(14, 4)
+    }
+
+    private fun _fill_shape() {
+        shapeData = getItem(8, 4)
+    }
+
+    private fun _fill_string() {
+        string1 = getItem(0, 1)
+        string2 = getItem(1, 1)
+        string3 = getItem(2, 1)
+        string4 = getItem(3, 1)
+        string5 = getItem(4, 1)
+        string6 = getItem(5, 1)
+        string7 = getItem(6, 1)
+        string8 = getItem(7, 1)
+    }
+
+    private fun _fill_route() {
+        lineRouteData = getItem(15, 4)
+    }
+
+    private fun _fill_street() {
+        streetName = getItem(16, 10)
+        streetCity = getItem(17, 4)
+        streetId = getItem(37, 4)
+    }
+
+    private fun _fill_polygon() {
+        polygonHead = getItem(18, 16)
+        polygonPoint = getItem(19, 2)
+    }
+
+    private fun _fill_speed() {
+        lineSpeedAvg = getItem(21, 2)
+        lineSpeedLineRef = getItem(20, 4)
+        lineSpeedIndex = getItem(22, 4)
+        lineSpeedIndex2 = getItem(23, 2)
+    }
+
+    private fun _fill_range() {
+        range = getItem(24, 6)
+    }
+
+    private fun _fill_alert() {
+        alertData = getItem(25, 16)
+    }
+
+    private fun _fill_tile() {
+        squareData = getItem(26, 12)
+        if (squareData.isEmpty()) {
+            println("Invalid square/data structure")
+        }
+    }
+
+    private fun _fill_metadata() {
+        metadataAttrributes = getItem(27, 8)
+    }
+
+    private fun _fill_venue() {
+        venueHead = getItem(28, 16)
+        venueVenueId = getItem(29, 2)
+    }
+
+    private fun _fill_line_ext() {
+        lineExtType = getItem(30, 1)
+        lineExtId = getItem(31, 4)
+        lineExtLevelByLine = getItem(32, 1)
+        lineExtLevels = getItem(33, 1)
+        lineSpeedMax = getItem(34, 2)
+        lineAttributes = getItem(36, 4)
+        lineType = getItem(43, 1)
+        lineNewType = getItem(44, 1)
+    }
+
+    private fun _fill_polygon_ex() {
+        polygonEx = getItem(35, 4)
+    }
+
+    private fun _fill_beacon() {
+        beaconPos = getItem(38, 4)
+        beaconId = getItem(39, 16)
+        beaconExPos = getItem(40, 4)
+        beaconExId = getItem(41, 16)
+        beaconExMask = getItem(42, 1)
+    }
+
+    private fun _fill_proto() {
+        if (!dynamicConfig.mapTileProtobufEnabled) return
+
+        val tileDataItemCount = -1
+        if (tileDataItemCount < 46) return
+
+        lineExtensionProtobufData = getItem(45, 1)
+
+        // ClientTile.proto
+    }
+}
+
+fun ByteBuffer.getBytes(size: Int): ByteArray {
+    val bytes = ByteArray(size)
+    get(bytes)
+    return bytes
+}
+
+fun ByteBuffer.getString(size: Int): String {
+    return getBytes(size).decodeToString()
+}
+
+class RawTile(
+    val id: Int,
+    val line: Int,
+    val items: Array<ByteArray>
+)
+
+class Tile2 {
+
+}
+
+class TileParser {
+    fun parse(bytes: ByteArray): List<RawTile> {
+        val byteBuffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN)
+
+        val magic = byteBuffer.int
+        if (magic != 0x2e2e2e2e) {
+            throw IllegalArgumentException("Invalid magic number")
+        }
+
+        val tilesCount = byteBuffer.int
+        println("Tiles count: $tilesCount")
+
+        val tiles = mutableListOf<RawTile>()
+
+        for (i in 0 ..< tilesCount) {
+            val id = byteBuffer.int
+            val line = byteBuffer.int // unknown
+            val size = byteBuffer.int // size of the tile data, unused
+
+            byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
+            tiles += parseTile(byteBuffer, id, line)
+            byteBuffer.order(ByteOrder.BIG_ENDIAN)
+        }
+
+        // Ensure that we have consumed all the data
+        if (byteBuffer.hasRemaining()) throw IllegalArgumentException("Invalid tile data")
+
+        return tiles
+    }
+
+    private fun parseTile(byteBuffer: ByteBuffer, id: Int, line: Int): RawTile {
+        val signature = byteBuffer.getString(4)
+        if (signature != "WZDF") {
             throw IllegalArgumentException("Invalid tile signature")
         }
 
-        val endianness = tileBbuf.int
+        val endianness = byteBuffer.int
         if (endianness != 1) {
             throw IllegalArgumentException("Invalid tile endianness")
         }
 
-        val version = tileBbuf.int
+        val version = byteBuffer.int
         if (version != 0x30000) {
             throw IllegalArgumentException("Invalid tile version")
         }
 
-        val dataFileSize = tileBbuf.int
-        val decompressedSize = tileBbuf.int
-        val compressedBytes = ByteArray(dataFileSize).apply { tileBbuf.get(this) }
+        val compressedSize = byteBuffer.int
+        val decompressedSize = byteBuffer.int
 
+        val compressedBytes = byteBuffer.getBytes(compressedSize)
         val decompressedBytes = InflaterInputStream(compressedBytes.inputStream()).use { it.readBytes() }
+
         if (decompressedBytes.size != decompressedSize) {
             throw IllegalArgumentException("Invalid decompressed size")
         }
 
-        println(decompressedBytes.joinToString("") { it.toInt().and(0xff).toString(16).padStart(2, '0') })
-
-        handleUncompressedTile(decompressedBytes)
-
-        bbuf.position(bbuf.position() + size)
+        return parseDecompressedTile(ByteBuffer.wrap(decompressedBytes).order(ByteOrder.LITTLE_ENDIAN), id, line)
     }
 
-    println("remaining bytes: ${bbuf.remaining()}")
+    private fun parseDecompressedTile(byteBuffer: ByteBuffer, id: Int, line: Int): RawTile {
+        val itemCount = byteBuffer.int
+        val padBits = byteBuffer.int
+
+        val padMask = (0xffffffff shl (padBits % 32)).toInt()
+        val pad = padMask.inv()
+
+        val itemSizes = IntArray(itemCount) { byteBuffer.int }
+        val items = Array(itemCount) { i ->
+            val previousSize = if (i == 0) 0 else itemSizes[i - 1]
+            val previousSizeWithPad = (previousSize + pad) and padMask
+            val size = itemSizes[i] - previousSizeWithPad
+            var padSize = previousSizeWithPad - previousSize
+            while (padSize-- > 0) byteBuffer.get() // skip padding
+            byteBuffer.getBytes(size)
+        }
+
+        return RawTile(id, line, items)
+    }
 }
 
-fun handleUncompressedTile(bytes: ByteArray) {
-    val decompressedBbuf = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
-
-    val itemCount = decompressedBbuf.int
-    val padBits = decompressedBbuf.int
-
-    val block1Offset = 8 // header
-    val block2Offset = 8 + (itemCount * 4) // header + item sizes
-
-    val padMask = (0xffffffff shl (padBits % 32)).toInt()
-    val pad = padMask.inv()
-
-    fun getItem(itemIndex: Int, itemSize: Int): Pair<Int, Int> {
-        val previousAccSizeOffset = block1Offset + ((itemIndex - 1) * 4)
-        val accSizeOffset = block1Offset + (itemIndex * 4)
-
-        val previousAccSize = if (itemIndex == 0) 0 else decompressedBbuf.getInt(previousAccSizeOffset)
-        val accSize = decompressedBbuf.getInt(accSizeOffset)
-
-        val previousAccSizeWithPad = (previousAccSize + pad) and padMask
-        val itemsOffset = block2Offset + previousAccSizeWithPad
-        val itemsSize = accSize - previousAccSizeWithPad
-        val itemCount = itemsSize / itemSize
-
-        return itemsOffset to itemCount
-    }
-
-    // line/data
-    val lineData = getItem(9, 8)
-    // line/summary
-    val lineSummary = getItem(10, 62)
-    // point/data
-    val pointData = getItem(13, 4)
-    // point/id
-    val pointId = getItem(14, 4)
-    // shape/data
-    val shapeDAta = getItem(8, 4)
-    // string
-    val string1 = getItem(0, 1)
-    if (string1.second > 0) {
-        val string1Offset = string1.first
-        val string1Bytes = ByteArray(string1.second).apply { decompressedBbuf.position(string1Offset); decompressedBbuf.get(this) }
-        println("string1: ${String(string1Bytes).replace("\u0000", " ")}")
-    }
-    val string2 = getItem(1, 1)
-    if (string2.second > 0) {
-        val string2Offset = string2.first
-        val string2Bytes = ByteArray(string2.second).apply { decompressedBbuf.position(string2Offset); decompressedBbuf.get(this) }
-        println("string2: ${String(string2Bytes).replace("\u0000", " ")}")
-    }
-    val string3 = getItem(2, 1)
-    if (string3.second > 0) {
-        val string3Offset = string3.first
-        val string3Bytes = ByteArray(string3.second).apply { decompressedBbuf.position(string3Offset); decompressedBbuf.get(this) }
-        println("string3: ${String(string3Bytes).replace("\u0000", " ")}")
-    }
-    val string4 = getItem(3, 1)
-    if (string4.second > 0) {
-        val string4Offset = string4.first
-        val string4Bytes = ByteArray(string4.second).apply { decompressedBbuf.position(string4Offset); decompressedBbuf.get(this) }
-        println("string4: ${String(string4Bytes).replace("\u0000", " ")}")
-    }
-    val string5 = getItem(4, 1)
-    if (string5.second > 0) {
-        val string5Offset = string5.first
-        val string5Bytes = ByteArray(string5.second).apply { decompressedBbuf.position(string5Offset); decompressedBbuf.get(this) }
-        println("string5: ${String(string5Bytes).replace("\u0000", " ")}")
-    }
-    val string6 = getItem(5, 1)
-    if (string6.second > 0) {
-        val string6Offset = string6.first
-        val string6Bytes = ByteArray(string6.second).apply { decompressedBbuf.position(string6Offset); decompressedBbuf.get(this) }
-        println("string6: ${String(string6Bytes).replace("\u0000", " ")}")
-    }
-    val string7 = getItem(6, 1)
-    if (string7.second > 0) {
-        val string7Offset = string7.first
-        val string7Bytes = ByteArray(string7.second).apply { decompressedBbuf.position(string7Offset); decompressedBbuf.get(this) }
-        println("string7: ${String(string7Bytes).replace("\u0000", " ")}")
-    }
-    val string8 = getItem(7, 1)
-    if (string8.second > 0) {
-        val string8Offset = string8.first
-        val string8Bytes = ByteArray(string8.second).apply { decompressedBbuf.position(string8Offset); decompressedBbuf.get(this) }
-        println("string8: ${String(string8Bytes).replace("\u0000", " ")}")
-    }
-    // line_route/data
-    val lineRouteData = getItem(15, 4)
-    // street/name
-    val streetName = getItem(16, 10)
-    // street/city
-    val streetCity = getItem(17, 4)
-    // TODO: Original code decreases streetCity.second by 1, but it's not clear why
-    // street/id
-    // TODO: If itemCount of the tile is less than 38, street_id is not read
-    val streetId = getItem(37, 4)
-    // polygon/head
-    val polygonHead = getItem(18, 16)
-    // polygon/point
-    val polygonPoint = getItem(19, 2)
-    // line_speed/avg
-    val lineSpeedAvg = getItem(21, 2)
-    // line_speed/line_ref
-    val lineSpeedLineRef = getItem(20, 4)
-    // TODO: If lineSpeedLineRef.second is 0, line_speed/index is not read and range is read, otherwise line_speed/index is read and range is not read
-    // range
-    val range = getItem(24, 6)
-    // alert/data
-    val alertData = getItem(25, 16)
-    // square/data
-    val squareData = getItem(26, 12)
-    // metadata/attributes
-    val metadataAttributes = getItem(27, 8)
-    // venue/head
-    val venueHead = getItem(28, 16)
-    // venue/venueid
-    val venueVenueId = getItem(29, 2)
-    // TODO: If itemCount of the tile is less than 31, skip _fill_line_ext
-    // line_ext/type
-    val lineExtType = getItem(30, 1)
-
-    // TODO: If lineSpeedLineRef.second is not 0, jump to here and skip the previous code
-    // line_speed/index
-    val lineSpeedIndex = getItem(22, 4)
-    // line_speed/index
-    val lineSpeedIndex2 = getItem(23, 2)
-
+@OptIn(ExperimentalStdlibApi::class)
+fun main() {
+    val bytes = hex.hexToByteArray()
+    val rawTiles = TileParser().parse(bytes)
+    println("parsed ${rawTiles.size} tiles")
 }
